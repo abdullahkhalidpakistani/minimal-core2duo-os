@@ -1,34 +1,28 @@
 #!/bin/sh
 set -e
 
-# Update and install required build tools for ISO creation
-apk update
-apk add genisoimage syslinux squashfs-tools cdrkit wget curl
+echo "=== Building Lightweight Core 2 Duo OS Rootfs ==="
 
-echo "=== Setting up Minimalist OS Environment ==="
-# Create working directories
-mkdir -p /tmp/os-root/etc /tmp/os-root/boot /tmp/os-root/root
+# Install necessary host utilities for rootfs and ISO creation
+sudo apt-get update
+sudo apt-get install -y genisoimage wget squashfs-tools curl
 
-# Configure lightweight environment variables
-echo "export XDG_CURRENT_DESKTOP=Openbox" > /tmp/os-root/etc/environment
+# Create working directory
+mkdir -p /tmp/os-root/boot/grub
 
-# Install lightweight window manager, file manager, and Chromium browser via Alpine APK
-# Note: In a full rootfs build, these packages are pulled into the chroot or rootfs
-echo "Preparing rootfs packages..."
-cat << 'EOF' > /tmp/install_packages.sh
-#!/bin/sh
-apk add --no-cache \
-    openbox \
-    pcmanfm \
-    chromium \
-    alsa-utils \
-    eudev \
-    xorg-server \
-    xf86-video-vesa \
-    xf86-input-libinput \
-    tint2 \
-    lxappearance
+# Create a basic GRUB configuration for fast booting
+cat << 'EOF' > /tmp/os-root/boot/grub/grub.cfg
+set timeout=2
+set default=0
+
+menuentry "Minimal Core2Duo OS" {
+    echo "Loading Linux Kernel..."
+    linux /boot/vmlinuz-lts root=/dev/ram0 init=/sbin/init quiet
+    initrd /boot/initrd-lts
+}
 EOF
 
-chmod +x /tmp/install_packages.sh
-echo "Build environment prepared successfully."
+# Build ISO structure using genisoimage
+echo "Generating final bootable ISO image..."
+genisoimage -o minimal-core2duo-os.iso -R -J /tmp/os-root
+echo "ISO generation complete!"
