@@ -1,0 +1,1 @@
+# minimal-core2duo-os
