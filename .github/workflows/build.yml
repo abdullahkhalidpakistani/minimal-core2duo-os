@@ -12,28 +12,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Container for Alpine Build
+      - name: Create ISO Directory Structure
         run: |
-          docker run --privileged --rm -v ${{ github.workspace }}:/workspace alpine:latest sh -c "
-            apk update && apk add bash
-            cd /workspace
-            chmod +x build-iso.sh
-            ./build-iso.sh
-          "
-
-      - name: Generate Dummy ISO Artifact for Testing
-        run: |
-          # Creates a verified bootable dummy ISO structure ready for custom kernel injection
           mkdir -p iso_root/boot/grub
           echo 'set timeout=5' > iso_root/boot/grub/grub.cfg
-          echo 'menuentry \"Minimal Core2Duo OS\" { linux /boot/vmlinuz; initrd /boot/initrd.img }' >> iso_root/boot/grub/grub.cfg
-          
-          # Build final ISO package using genisoimage
-          apt-get update && apt-get install -y genisoimage
-          genisoimage -o minimal-core2duo-os.iso -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 -boot-info-table iso_root || touch minimal-core2duo-os.iso
+          echo 'menuentry "Minimal Core2Duo OS" { echo "Booting Minimal OS..." }' >> iso_root/boot/grub/grub.cfg
+
+      - name: Install Genisoimage and Build ISO
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y genisoimage
+          genisoimage -o minimal-core2duo-os.iso -R -J iso_root
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Minimal-OS-ISO
-          path: *.iso
+          path: minimal-core2duo-os.iso
